@@ -1,5 +1,5 @@
 from domain.interfaces import IUserRepository
-from exceptions.user_exceptions import UserAlreadyExistsError, PasswordInvalidExistsError, EmaiAlreadyExistsError, InvalidEmailError, InvalidUsernameError
+from exceptions.user_exceptions import UserAlreadyExistsError, PasswordInvalidExistsError, EmaiAlreadyExistsError, InvalidEmailError, InvalidUsernameError, UserDoesNotExistError
 
 class UserValidator:
 
@@ -19,3 +19,10 @@ class UserValidator:
 
         if len(password) < 6:
             raise PasswordInvalidExistsError("Password must be at least 6 characters")
+    
+    @staticmethod
+    def validate_existing_user(user_id: int, repo: IUserRepository):
+        user = repo.get_user_by_id(user_id)
+        if not user:
+            raise UserDoesNotExistError(f"User with 'id: {user.id}' and 'name:{user.username}' does not exist")
+        return user

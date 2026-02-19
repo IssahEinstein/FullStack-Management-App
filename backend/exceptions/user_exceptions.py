@@ -21,3 +21,7 @@ class EmaiAlreadyExistsError(UserError):
 class PasswordInvalidExistsError(UserError):
     """Raised when password is less than 6 characters long"""
     pass
+
+class UserDoesNotExistError(UserError):
+    """Raised when user id queried doesn not exist."""
+    pass

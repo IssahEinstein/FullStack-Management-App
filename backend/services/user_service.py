@@ -33,3 +33,7 @@ class UserService:
             return None
 
         return user
+    
+    def get_single_user(self, user_id):
+        user = UserValidator.validate_existing_user(user_id, self.repository)
+        return user
