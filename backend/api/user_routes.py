@@ -7,6 +7,7 @@ from utils.dependencies import get_current_user, get_refresh_token_repo
 from repositories.in_memory_refresh_token_repository import InMemoryRefreshTokenRepository
 
 
+
 router = APIRouter(prefix="/users", tags=["Users"])
 
 # connecting user router to my business logic
@@ -48,6 +49,18 @@ def login(data: UserLogin, response: Response, refresh_repo: InMemoryRefreshToke
         )
         logger.info(f"User with id {user.id} and email {user.email} has succussfully logged in")
 
+        import secrets
+        
+        csrf_token = secrets.token_urlsafe(32)
+        response.set_cookie(
+            key="csrf_token",
+            value=csrf_token,
+            httponly=False,   # must be readable by JS
+            secure=True,
+            samesite="none",
+            )
+
+
         access_token = create_access_token({"user_id": user.id})
         refresh_token = create_refresh_token(user.id)
 
@@ -77,9 +90,19 @@ def refresh_access_token(
     response: Response,
     refresh_repo: InMemoryRefreshTokenRepository = Depends(get_refresh_token_repo),
 ):
+    # VERIFY CSRF TOKEN before verifying refresh token
+    csrf_cookie = request.cookies.get("csrf_token")
+    csrf_header = request.headers.get("X-CSRF-Token")
+
+    if not csrf_cookie or not csrf_header or csrf_cookie != csrf_header:
+        raise HTTPException(status_code=403, detail="CSRF validation failed")
+    
+
     cookie_token = request.cookies.get("refresh_token")
     if not cookie_token:
         raise HTTPException(status_code=401, detail="Missing refresh token")
+    
+
 
     try:
         user_id = verify_refresh_token(cookie_token)
@@ -87,8 +110,16 @@ def refresh_access_token(
         raise HTTPException(status_code=401, detail=str(e))
 
     stored_token = refresh_repo.get(user_id)
+
+    if stored_token is None:
+    # User logged out or token was revoked
+        raise HTTPException(status_code=401, detail="Session expired")
+
+
     if stored_token != cookie_token:
-        raise HTTPException(status_code=401, detail="Refresh token invalid or rotated")
+        refresh_repo.delete(user_id)  # invalidate ALL sessions (- cryptographic intrusion detection system)
+
+        raise HTTPException(status_code=401, detail="Suspicious activity detected")
 
     new_refresh = create_refresh_token(user_id)
     refresh_repo.save(user_id, new_refresh)
@@ -111,7 +142,15 @@ def logout(
     request: Request,
     response: Response,
     refresh_repo: InMemoryRefreshTokenRepository = Depends(get_refresh_token_repo),
-):
+    ):
+    
+    # VERIFYING CRSF TOKEN BEFORE VERIFYING REFRESH TOKEN TO PREVENT FORCED LOG-OUT
+    csrf_cookie = request.cookies.get("csrf_token")
+    csrf_header = request.headers.get("X-CSRF-Token")
+
+    if not csrf_cookie or not csrf_header or csrf_cookie != csrf_header:
+        raise HTTPException(status_code=403, detail="CSRF validation failed")
+
     cookie_token = request.cookies.get("refresh_token")
 
     if cookie_token:
