@@ -2,11 +2,13 @@ import jwt
 from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
+from exceptions.refresh_token_exceptions import InvalidTokenError
 
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 ALGORITHM = "HS256"
 
@@ -25,3 +27,33 @@ def decode_access_token(token: str):
     except jwt.InvalidTokenError:
         raise ValueError("Invalid token")
     
+def create_refresh_token(user_id: int) -> str:
+    """
+    Refresh token is long-lived and only used to get new access tokens.
+    """
+    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    payload = {
+        "sub": str(user_id),
+        "type": "refresh",
+        "exp": expire,
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+            #REFRESH TOKEN
+
+def verify_refresh_token(token: str) -> int:
+    """
+    Returns user_id if valid, otherwise raises InvalidTokenError.
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        if payload.get("type") != "refresh":
+            raise InvalidTokenError("Invalid token type")
+
+        return int(payload["sub"])
+
+    except jwt.ExpiredSignatureError:
+        raise InvalidTokenError("Refresh token expired")
+    except jwt.InvalidTokenError:
+        raise InvalidTokenError("Invalid refresh token")

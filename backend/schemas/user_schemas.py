@@ -11,6 +11,9 @@ class UserLogin(BaseModel):
 
 class UserResponse(BaseModel):
     # model_config = ConfigDict(from_attributes=True) ** think about adding this in relation to prisma objects and supabase
-
     id: int
     username: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str

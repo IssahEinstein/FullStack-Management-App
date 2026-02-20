@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException,Depends
+from fastapi import APIRouter, HTTPException, Depends, Response, Request
 from core.logging_config import logger
-from schemas.user_schemas import UserCreate, UserLogin, UserResponse
+from schemas.user_schemas import UserCreate, UserLogin, UserResponse, TokenResponse
 from utils.user_serializer import UserSerializer
-from utils.jwt_handler import create_access_token
-from utils.dependencies import get_current_user
+from utils.jwt_handler import create_access_token, create_refresh_token, verify_refresh_token, InvalidTokenError, REFRESH_TOKEN_EXPIRE_DAYS
+from utils.dependencies import get_current_user, get_refresh_token_repo
+from repositories.in_memory_refresh_token_repository import InMemoryRefreshTokenRepository
 
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -24,8 +25,6 @@ def get_me(user_id: int = Depends(get_current_user)):
         logger.error(f"User validation failed: {e}")
         return HTTPException(status_code=500, detail=str(e))
 
-
-
 @router.post("/signup")
 def signup(data: UserCreate):
     try:
@@ -41,7 +40,7 @@ def signup(data: UserCreate):
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/login")
-def login(data: UserLogin):
+def login(data: UserLogin, response: Response, refresh_repo: InMemoryRefreshTokenRepository = Depends(get_refresh_token_repo)):
     try:
         user = service.authenticate(
             data.username,
@@ -49,14 +48,85 @@ def login(data: UserLogin):
         )
         logger.info(f"User with id {user.id} and email {user.email} has succussfully logged in")
 
-        token = create_access_token({"user_id": user.id})
+        access_token = create_access_token({"user_id": user.id})
+        refresh_token = create_refresh_token(user.id)
+
+        refresh_repo.save(user.id, refresh_token)
+
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="none",
+            max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        )
 
         return {
-            "access_token": token,
+            "access_token": access_token,
             "token_type": "bearer"
         }
 
     except Exception as e:
         logger.error("Invalid login attempt")
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+@router.post("/refresh")
+def refresh_access_token(
+    request: Request,
+    response: Response,
+    refresh_repo: InMemoryRefreshTokenRepository = Depends(get_refresh_token_repo),
+):
+    cookie_token = request.cookies.get("refresh_token")
+    if not cookie_token:
+        raise HTTPException(status_code=401, detail="Missing refresh token")
+
+    try:
+        user_id = verify_refresh_token(cookie_token)
+    except InvalidTokenError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+    stored_token = refresh_repo.get(user_id)
+    if stored_token != cookie_token:
+        raise HTTPException(status_code=401, detail="Refresh token invalid or rotated")
+
+    new_refresh = create_refresh_token(user_id)
+    refresh_repo.save(user_id, new_refresh)
+
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+    )
+
+    new_access = create_access_token({"sub": str(user_id)})
+
+    return {"access_token": new_access, "token_type": "bearer"}
+
+@router.post("/logout")
+def logout(
+    request: Request,
+    response: Response,
+    refresh_repo: InMemoryRefreshTokenRepository = Depends(get_refresh_token_repo),
+):
+    cookie_token = request.cookies.get("refresh_token")
+
+    if cookie_token:
+        try:
+            user_id = verify_refresh_token(cookie_token)
+            refresh_repo.delete(user_id)
+        except InvalidTokenError as e:
+            raise HTTPException(status_code=401, detail=str(e))
+
+    response.delete_cookie(
+        key="refresh_token",
+        samesite="none",
+        secure=True,
+    )
+
+    return {"detail": "Logged out"}
+
 

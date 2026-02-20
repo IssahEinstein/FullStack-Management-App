@@ -22,3 +22,14 @@ class IUserRepository(Protocol):
 
     def get_by_email(self, email: str):
         pass
+
+class IRefreshtokenRepository(Protocol):
+
+    def save(self, user_id: int, token: str):
+        pass
+
+    def get(self, user_id: int):
+        pass
+
+    def delete(self, user_id: int):
+        pass
