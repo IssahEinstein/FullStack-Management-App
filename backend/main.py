@@ -6,8 +6,17 @@ from services.user_service import UserService
 from api.task_routes import router as task_router, set_task_service
 from api.user_routes import router as user_router, set_user_service
 from fastapi.middleware.cors import CORSMiddleware
+from db import connect_db, disconnect_db
 
 app = FastAPI()
+
+@app.on_event("startup")
+async def startup():
+    await connect_db()
+
+@app.on_event("shutdown")
+async def shutdown():
+    await disconnect_db()
 
 # cors
 # allow_origins=[
@@ -34,3 +43,6 @@ set_task_service(task_service)
 
 app.include_router(task_router)
 app.include_router(user_router)
+
+
+

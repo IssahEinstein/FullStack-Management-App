@@ -9,6 +9,8 @@ Authentication & Users
 - Password hashing
 - Protected routes using Depends(get_current_user)
 - Clean separation of concerns (routers → services → repositories)
+- Refresh tokens
+- CSRF (Double Submit Cookie refresh & logout routes)
 Tasks
 - Create tasks
 - Retrieve all tasks for the authenticated user
@@ -125,7 +127,6 @@ http://127.0.0.1:8000/docs
 
 📌 Future Improvements
 - Database integration (PostgreSQL / MongoDB)
-- Refresh tokens
 - Role‑based access control (RBAC)
 - Pagination & filtering for tasks
 - Dockerization
