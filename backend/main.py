@@ -1,12 +1,12 @@
 from fastapi import FastAPI
-from repositories.in_memory_task_repository import InMemoryTaskRepository
-from repositories.in_memory_user_repository import InMemoryUseRepository
+from repositories.prisma_task_repository import PrismaTaskRepository
+from repositories.prisma_user_repository import PrismaUserRepository
 from services.task_service import TaskService
 from services.user_service import UserService
 from api.task_routes import router as task_router, set_task_service
 from api.user_routes import router as user_router, set_user_service
 from fastapi.middleware.cors import CORSMiddleware
-from db import connect_db, disconnect_db
+from db import connect_db, disconnect_db, db
 
 app = FastAPI()
 
@@ -32,13 +32,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-user_repo = InMemoryUseRepository()
+user_repo = PrismaUserRepository(db)
 user_service = UserService(user_repo)
 set_user_service(user_service)
 
-task_repo = InMemoryTaskRepository()
+task_repo = PrismaTaskRepository(db)
 task_service = TaskService(task_repo)
-
 set_task_service(task_service)
 
 app.include_router(task_router)

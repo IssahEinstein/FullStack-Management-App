@@ -9,31 +9,25 @@ class UserService:
     def hash_password(self, password: str):
         return hashlib.sha256(password.encode()).hexdigest()
 
-    def create_user(self, username: str, email: str, password: str):
-        UserValidator.validate_new_user(username, email, password, self.repository)
+    async def create_user(self, username: str, email: str, password: str):
+        await UserValidator.validate_new_user(username, email, password, self.repository)
 
         password_hash = self.hash_password(password)
 
-        user = User(
-            id=0,
-            username=username,
-            email=email,
-            password_hash=password_hash
-        )
-
-        self.repository.add(user)
-        return user
-
-    def authenticate(self, username: str, password: str):
-        user = self.repository.get_by_username(username)
-        if not user:
-            return None
+        saved_user = await self.repository.add(username, email, password_hash)
+        return saved_user
+ 
+    async def authenticate(self, username: str, password: str):
+        user = await self.repository.get_by_username(username)
+        
+        if user is None:
+            raise ValueError("User not found") 
 
         if user.password_hash != self.hash_password(password):
-            return None
+            raise ValueError("Invalid password")
 
         return user
     
-    def get_single_user(self, user_id):
-        user = UserValidator.validate_existing_user(user_id, self.repository)
+    async def get_single_user(self, user_id):
+        user = await UserValidator.validate_existing_user(user_id, self.repository)
         return user

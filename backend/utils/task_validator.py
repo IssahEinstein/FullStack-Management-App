@@ -8,15 +8,9 @@ class TaskValidator:
         if not title or title.strip() == "":
             raise InvalidTaskDataError("Title cannot be empty.")
 
-        if not description or len(description.strip()) < 5:
-            raise InvalidTaskDataError("Description needs at least 5 characters")
-
-        # if repository.get_by_id(id) is not None:
-        #     raise TaskAlreadyExistsError(f"Task with id {id} already exists.")
-
     @staticmethod
-    def validate_task_exists(id: int, user_id: int, repository: ITaskRepository) -> Task:
-        task = repository.get_by_id(id, user_id)
+    async def validate_task_exists(id: str, user_id: str, repository: ITaskRepository) -> Task:
+        task = await repository.get_by_id(id, user_id)
         if task is None:
             raise TaskNotFoundError(f"Task with id {id} does not exist.") # specify user whose task failed vallidation
         return task

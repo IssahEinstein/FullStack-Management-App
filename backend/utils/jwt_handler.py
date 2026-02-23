@@ -27,13 +27,13 @@ def decode_access_token(token: str):
     except jwt.InvalidTokenError:
         raise ValueError("Invalid token")
     
-def create_refresh_token(user_id: int) -> str:
+def create_refresh_token(user_id: str) -> str:
     """
     Refresh token is long-lived and only used to get new access tokens.
     """
     expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     payload = {
-        "sub": str(user_id),
+        "sub": user_id,
         "type": "refresh",
         "exp": expire,
     }
@@ -41,7 +41,7 @@ def create_refresh_token(user_id: int) -> str:
 
             #REFRESH TOKEN
 
-def verify_refresh_token(token: str) -> int:
+def verify_refresh_token(token: str) -> str:
     """
     Returns user_id if valid, otherwise raises InvalidTokenError.
     """
@@ -51,7 +51,7 @@ def verify_refresh_token(token: str) -> int:
         if payload.get("type") != "refresh":
             raise InvalidTokenError("Invalid token type")
 
-        return int(payload["sub"])
+        return payload["sub"]
 
     except jwt.ExpiredSignatureError:
         raise InvalidTokenError("Refresh token expired")

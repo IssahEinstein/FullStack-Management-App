@@ -7,7 +7,6 @@ from utils.dependencies import get_current_user, get_refresh_token_repo
 from repositories.in_memory_refresh_token_repository import InMemoryRefreshTokenRepository
 
 
-
 router = APIRouter(prefix="/users", tags=["Users"])
 
 # connecting user router to my business logic
@@ -16,10 +15,10 @@ def set_user_service(user_service):
     global service
     service = user_service
 
-@router.get("/me", response_model=UserResponse)
-def get_me(user_id: int = Depends(get_current_user)):
+@router.get("/me")
+async def get_me(user_id: int = Depends(get_current_user)):
     try:
-        user = service.get_single_user(user_id)
+        user = await service.get_single_user(user_id)
         logger.info(f"User with {user_id} successfully retrieved")
         return user
     except Exception as e:
@@ -27,9 +26,9 @@ def get_me(user_id: int = Depends(get_current_user)):
         return HTTPException(status_code=500, detail=str(e))
 
 @router.post("/signup")
-def signup(data: UserCreate):
+async def signup(data: UserCreate):
     try:
-        user = service.create_user(
+        user = await service.create_user(
             data.username,
             data.email,
             data.password
@@ -41,13 +40,13 @@ def signup(data: UserCreate):
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/login")
-def login(data: UserLogin, response: Response, refresh_repo: InMemoryRefreshTokenRepository = Depends(get_refresh_token_repo)):
+async def login(data: UserLogin, response: Response, refresh_repo: InMemoryRefreshTokenRepository = Depends(get_refresh_token_repo)):
     try:
-        user = service.authenticate(
+        user = await service.authenticate(
             data.username,
             data.password
         )
-        logger.info(f"User with id {user.id} and email {user.email} has succussfully logged in")
+        logger.info(f"User with id {user.id} and email {user.email} has successfully logged in")
 
         import secrets
         
@@ -59,7 +58,6 @@ def login(data: UserLogin, response: Response, refresh_repo: InMemoryRefreshToke
             secure=True,
             samesite="none",
             )
-
 
         access_token = create_access_token({"user_id": user.id})
         refresh_token = create_refresh_token(user.id)
@@ -74,7 +72,7 @@ def login(data: UserLogin, response: Response, refresh_repo: InMemoryRefreshToke
             samesite="none",
             max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         )
-
+        
         return {
             "access_token": access_token,
             "token_type": "bearer"
@@ -97,12 +95,9 @@ def refresh_access_token(
     if not csrf_cookie or not csrf_header or csrf_cookie != csrf_header:
         raise HTTPException(status_code=403, detail="CSRF validation failed")
     
-
     cookie_token = request.cookies.get("refresh_token")
     if not cookie_token:
         raise HTTPException(status_code=401, detail="Missing refresh token")
-    
-
 
     try:
         user_id = verify_refresh_token(cookie_token)

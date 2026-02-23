@@ -13,9 +13,9 @@ def set_task_service(task_service):
     service = task_service
 
 @router.get("/tasks")
-def get_tasks(user_id: int = Depends(get_current_user)):
+async def get_tasks(user_id: str = Depends(get_current_user)):
     try:
-        tasks = service.list_tasks(user_id)
+        tasks = await service.list_tasks(user_id)
         logger.info(f"All tasks retrieved successfully")
         return [TaskSerializer.to_dict(task) for task in tasks]
     except Exception as e:
@@ -23,10 +23,9 @@ def get_tasks(user_id: int = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/tasks/{task_id}")
-def get_single_task(task_id: int, user_id: int = Depends(get_current_user)):
-    # print("hello world")
+async def get_single_task(task_id: str, user_id: str = Depends(get_current_user)):
     try:
-        task = service.get_single_task(task_id, user_id)
+        task = await service.get_single_task(task_id, user_id)
         logger.info("A single task was retrieved successfully")
         return task
     except Exception as e:
@@ -34,9 +33,9 @@ def get_single_task(task_id: int, user_id: int = Depends(get_current_user)):
         raise HTTPException(status_code= 500, detail=str(e))
 
 @router.post("/tasks")
-def create_task(task_data: TaskCreate, user_id: int = Depends(get_current_user)):
+async def create_task(task_data: TaskCreate, user_id: str = Depends(get_current_user)):
     try:
-        task = service.create_task(
+        task = await service.create_task(
             task_data.title,
             task_data.description,
             user_id = user_id
@@ -48,9 +47,9 @@ def create_task(task_data: TaskCreate, user_id: int = Depends(get_current_user))
         raise HTTPException(status_code=404, detail=str(e))
 
 @router.put("/tasks/{task_id}/complete")
-def complete_task(task_id: int, user_id: int = Depends(get_current_user)):
+async def complete_task(task_id: str, user_id: str = Depends(get_current_user)):
     try:
-        task = service.complete_task(task_id, user_id)
+        task = await service.complete_task(task_id, user_id)
         logger.info(f"Task with id {task_id} completed")
         return TaskSerializer.to_dict(task)
     except Exception as e:
@@ -58,9 +57,9 @@ def complete_task(task_id: int, user_id: int = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.delete("/tasks/{task_id}/delete")
-def delete_task(task_id: int, user_id: int = Depends(get_current_user)):
+async def delete_task(task_id: str, user_id: str = Depends(get_current_user)):
     try:
-        task = service.delete_task(task_id, user_id)
+        task = await service.delete_task(task_id, user_id)
         logger.info(f"Task with id {task_id} deleted successfully")
         return task
     except Exception as e:

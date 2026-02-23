@@ -14,13 +14,13 @@ class ITaskRepository(Protocol):
 
 class IUserRepository(Protocol):
 
-    def add(self, user):
+    async def add(self, user):
         pass
 
-    def get_by_username(self, username: str):
+    async def get_by_username(self, username: str):
         pass
 
-    def get_by_email(self, email: str):
+    async def get_by_email(self, email: str):
         pass
 
 class IRefreshtokenRepository(Protocol):
