@@ -20,15 +20,65 @@ model User {
   email         String   @unique
   password_hash String
   createdAt     DateTime @default(now())
-  tasks         Task[]
+
+  tasks       Task[]
+  roles       UserRole[]
+  parentLinks ParentChild[] @relation("ParentRelation")
+  childLinks  ParentChild[] @relation("ChildRelation")
 }
 
 model Task {
-  id        String   @id @default(uuid())
-  title     String
-  description String?  // optional text field
-  completed Boolean  @default(false)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  completed   Boolean  @default(false)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model UserRole {
+  id     String @id @default(uuid())
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+}
+
+model ParentChild {
+  id       String @id @default(uuid())
+  parentId String
+  childId  String
+
+  parent User @relation("ParentRelation", fields: [parentId], references: [id])
+  child  User @relation("ChildRelation", fields: [childId], references: [id])
+
+  @@unique([parentId, childId])
+}
+
+model Permission {
+  id    String           @id @default(uuid())
+  name  String           @unique
+  roles RolePermission[]
+}
+
+model RolePermission {
+  id           String @id @default(uuid())
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
 }
