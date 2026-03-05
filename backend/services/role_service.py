@@ -1,6 +1,9 @@
+from utils.dependencies import get_current_user
+
+
 class RoleService:
-    def __init__(self, db):
-        self.db = db
+    def __init__(self, repository):
+        self.repository = repository
 
     async def assign_role(self, user_id: str, role_name: str):
         role = await self.db.role.find_unique(where={"name": role_name})
