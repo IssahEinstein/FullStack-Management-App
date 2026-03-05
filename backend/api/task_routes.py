@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from utils.task_serializer import TaskSerializer
 from core.logging_config import logger
 from schemas.task_schemas import TaskCreate
-from utils.dependencies import get_current_user
+from utils.dependencies import get_current_user, get_task_repo, get_auth_service
 
 router = APIRouter()
 
@@ -23,9 +23,15 @@ async def get_tasks(user_id: str = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/tasks/{task_id}")
-async def get_single_task(task_id: str, user_id: str = Depends(get_current_user)):
+async def get_single_task(task_id: str, user_id: str = Depends(get_current_user), task_repo = Depends(get_task_repo), auth_service = Depends(get_auth_service)):
+    task = await task_repo.get_by_id(task_id)
+    if not task:
+        raise HTTPException(404, "Task not found")
+    
+    if not await auth_service.can_manage_task(user_id, task.userId):
+        raise HTTPException(403, "Forbidden")
+
     try:
-        task = await service.get_single_task(task_id, user_id)
         logger.info("A single task was retrieved successfully")
         return task
     except Exception as e:

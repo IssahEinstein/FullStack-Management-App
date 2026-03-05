@@ -53,11 +53,10 @@ class PrismaTaskRepository(ITaskRepository):
             for r in records
         ]
     
-    async def get_by_id(self, id: str, user_id: str) -> Task | None:
+    async def get_by_id(self, id: str) -> Task | None:
         record = await self.db.task.find_first(
             where={
-                "id": id,
-                "userId": user_id
+                "id": id
             }
         )
 

@@ -1,4 +1,4 @@
-from utils.dependencies import get_current_user
+# from utils.dependencies import get_current_user
 
 
 class RoleService:

@@ -9,8 +9,8 @@ class TaskValidator:
             raise InvalidTaskDataError("Title cannot be empty.")
 
     @staticmethod
-    async def validate_task_exists(id: str, user_id: str, repository: ITaskRepository) -> Task:
-        task = await repository.get_by_id(id, user_id)
+    async def validate_task_exists(id: str, repository: ITaskRepository) -> Task:
+        task = await repository.get_by_id(id)
         if task is None:
             raise TaskNotFoundError(f"Task with id {id} does not exist.") # specify user whose task failed vallidation
         return task

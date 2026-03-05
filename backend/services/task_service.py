@@ -25,8 +25,8 @@ class TaskService:
         await self.repository.complete(task.id)
         return task
     
-    async def get_single_task(self, id: str, user_id: str = Depends(get_current_user)):
-        task = await TaskValidator.validate_task_exists(id, user_id, self.repository)
+    async def get_single_task(self, id: str):
+        task = await TaskValidator.validate_task_exists(id, self.repository)
         return TaskSerializer.to_dict(task)
     
     async def list_tasks(self, user_id: str = Depends(get_current_user)):
