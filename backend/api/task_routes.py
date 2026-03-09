@@ -3,6 +3,7 @@ from utils.task_serializer import TaskSerializer
 from core.logging_config import logger
 from schemas.task_schemas import TaskCreate
 from utils.dependencies import get_current_user, get_task_repo, get_auth_service
+from repositories.prisma_user_repository import PrismaUserRepository
 
 router = APIRouter()
 
@@ -23,12 +24,12 @@ async def get_tasks(user_id: str = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/tasks/{task_id}")
-async def get_single_task(task_id: str, user_id: str = Depends(get_current_user), task_repo = Depends(get_task_repo), auth_service = Depends(get_auth_service)):
+async def get_single_task(task_id: str, user_id: str = Depends(get_current_user), task_repo: PrismaUserRepository =  Depends(get_task_repo), auth_service: bool = Depends(get_auth_service)):
     task = await task_repo.get_by_id(task_id)
     if not task:
         raise HTTPException(404, "Task not found")
     
-    if not await auth_service.can_manage_task(user_id, task.userId):
+    if not await auth_service.can_manage_task(user_id, task.user_id):
         raise HTTPException(403, "Forbidden")
 
     try:

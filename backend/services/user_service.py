@@ -16,6 +16,14 @@ class UserService:
 
         saved_user = await self.repository.add(username, email, password_hash)
         return saved_user
+
+    async def create_parent(self, username: str, email: str, password: str):
+        await UserValidator.validate_new_user(username, email, password, self.repository)
+
+        password_hash = self.hash_password(password)
+
+        saved_user = await self.repository.add(username, email, password_hash)
+        return saved_user
  
     async def authenticate(self, username: str, password: str):
         user = await self.repository.get_by_username(username)
@@ -31,3 +39,4 @@ class UserService:
     async def get_single_user(self, user_id):
         user = await UserValidator.validate_existing_user(user_id, self.repository)
         return user
+

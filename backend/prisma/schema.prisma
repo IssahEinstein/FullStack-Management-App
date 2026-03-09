@@ -25,6 +25,7 @@ model User {
   roles       UserRole[]
   parentLinks ParentChild[] @relation("ParentRelation")
   childLinks  ParentChild[] @relation("ChildRelation")
+  parentInvite  ParentInvite?
 }
 
 model Task {
@@ -81,4 +82,14 @@ model RolePermission {
   permission Permission @relation(fields: [permissionId], references: [id])
 
   @@unique([roleId, permissionId])
+}
+
+model ParentInvite {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  tokenHash  String
+  expiresAt  DateTime
+  used       Boolean  @default(false)
+  createdAt  DateTime @default(now())
 }

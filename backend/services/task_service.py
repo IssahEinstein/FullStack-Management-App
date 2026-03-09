@@ -14,6 +14,8 @@ class TaskService:
         new_task = await self.repository.add(title=title, description=description, user_id=user_id, is_completed=False)
         return new_task
     
+    
+    
     async def delete_task(self, id: str, user_id: str = Depends(get_current_user)):
         task = await TaskValidator.validate_task_exists(id, user_id, self.repository)
         await self.repository.delete_task(task.id, user_id)
