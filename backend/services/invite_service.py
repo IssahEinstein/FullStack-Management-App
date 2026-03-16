@@ -1,4 +1,3 @@
-# services/invite_service.py
 import secrets
 import hashlib
 from datetime import datetime, timedelta
@@ -33,9 +32,7 @@ class InviteService:
 
         return invite
 
-    async def consume_invite(self, raw_token: str
-                            #  , password_hash: str
-                             ):
+    async def consume_invite(self, raw_token: str):
         token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
 
         invite = await self.repository.parentinvite.find_first(

@@ -5,5 +5,6 @@ class TaskSerializer:
             "id": task.id,
             "title": task.title,
             "description": task.description,
-            "completed": task.is_completed
+            "completed": task.is_completed,
+            "user_id": task.user_id
         }

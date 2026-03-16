@@ -17,15 +17,16 @@ class TaskService:
     
     
     async def delete_task(self, id: str, user_id: str = Depends(get_current_user)):
-        task = await TaskValidator.validate_task_exists(id, user_id, self.repository)
+        task = await TaskValidator.validate_task_exists(id, self.repository)
         await self.repository.delete_task(task.id, user_id)
         return task
         
     
     async def complete_task(self, id: str, user_id: str = Depends(get_current_user)):
-        task = await TaskValidator.validate_task_exists(id, user_id, self.repository)
+        task = await TaskValidator.validate_task_exists(id, self.repository)
         await self.repository.complete(task.id)
         return task
+    
     
     async def get_single_task(self, id: str):
         task = await TaskValidator.validate_task_exists(id, self.repository)
@@ -33,3 +34,29 @@ class TaskService:
     
     async def list_tasks(self, user_id: str = Depends(get_current_user)):
         return await self.repository.get_all(user_id)
+    
+async def list_tasks_for_user(self, actor_id: str, auth_service):
+    """
+    Returns tasks visible to the actor based on RBAC:
+    - Admin: all tasks
+    - Parent: own tasks + children's tasks
+    - Kid: own tasks
+    """
+
+    # 1. Admin → all tasks
+    if await auth_service.role_service.user_has_role(actor_id, "admin"):
+        return await self.repository.get_all_tasks()  # you will add this repo method
+
+    # 2. Parent → own + children
+    if await auth_service.role_service.user_has_role(actor_id, "parent"):
+        # get children
+        children = await auth_service.parent_child_service.get_children(actor_id)
+        child_ids = [c.id for c in children]
+
+        # include parent themselves
+        user_ids = [actor_id] + child_ids
+
+        return await self.repository.get_tasks_for_users(user_ids)
+
+    # 3. Kid → only own tasks
+    return await self.repository.get_all(actor_id)
