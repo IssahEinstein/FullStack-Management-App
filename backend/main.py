@@ -5,8 +5,10 @@ from services.task_service import TaskService
 from services.user_service import UserService
 from services.role_service import RoleService
 from services.invite_service import InviteService
+from services.parent_child_service import ParentChildService
+from services.authorization_service import AuthorizationService
 from api.admin_routes import router as admin_router, set_admin_services
-from api.task_routes import router as task_router, set_task_service
+from api.task_routes import router as task_router, set_task_service, set_auth_service_for_task_route
 from api.user_routes import router as user_router, set_user_service
 from api.auth_routes import router as auth_router, set_auth_services
 from fastapi.middleware.cors import CORSMiddleware
@@ -50,6 +52,10 @@ invite_service = InviteService(db)
 set_admin_services(user_service, role_service, invite_service)
 
 set_auth_services(user_service, invite_service)
+
+parent_child_service = ParentChildService(db)
+authorization_service = AuthorizationService(role_service, parent_child_service)
+set_auth_service_for_task_route(authorization_service)
 
 app.include_router(task_router)
 app.include_router(user_router)

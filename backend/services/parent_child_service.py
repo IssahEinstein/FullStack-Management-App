@@ -11,6 +11,7 @@ class ParentChildService:
         await self.db.parentchild.delete_many(
             where={"parentId": parent_id, "childId": child_id}
         )
+    # to delete a kid from the database, first unlink the kid, then erase them from the database
 
     async def is_parent_of(self, parent_id: str, child_id: str) -> bool:
         return await self.db.parentchild.find_first(

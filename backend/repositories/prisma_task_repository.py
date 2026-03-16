@@ -24,9 +24,27 @@ class PrismaTaskRepository(ITaskRepository):
             id=record.id            
         )
     
+    async def get_by_id(self, id: str) -> Task | None:
+        record = await self.db.task.find_first(
+            where={
+                "id": id
+            }
+        )
+
+        if record is None:
+            return None
+
+        return Task(
+            title=record.title,
+            description=record.description,
+            user_id=record.userId,
+            is_completed=record.completed,
+            id=record.id
+        )
+    
     async def delete_task(self, id: str, user_id: str) -> Task | None:
         # First fetch the task (ownership enforced)
-        task = await self.get_by_id(id, user_id)
+        task = await self.get_by_id(id)
         if task is None:
             return None
 
@@ -52,25 +70,15 @@ class PrismaTaskRepository(ITaskRepository):
             )
             for r in records
         ]
-    
-    async def get_by_id(self, id: str) -> Task | None:
-        record = await self.db.task.find_first(
-            where={
-                "id": id
-            }
-        )
 
-        if record is None:
-            return None
-
-        return Task(
-            title=record.title,
-            description=record.description,
-            user_id=record.userId,
-            is_completed=record.completed,
-            id=record.id
+    async def get_tasks_for_users(self, user_ids: list[str]):
+        return await self.db.task.find_many(
+            where={"userId": {"in": user_ids}}
         )
     
+    async def get_all_tasks(self):
+        return await self.db.task.find_many()
+
     async def complete(self, task_id):
         await self.db.task.update(
             where={"id": task_id},
